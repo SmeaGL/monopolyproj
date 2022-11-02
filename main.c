@@ -180,7 +180,7 @@ void printBoard(char board[], char property[])
 {
     printf("        e   f   g   h\n");
     printf("  +---+---+---+---+---+---+\n");
-    printf("  |%c V|%c %c|%c %c|%c %c|%c  |%c P|\n", board[5], board[6], property[6], board[7], property[7], board[8], property[8], board[9], property[9], board[10]);
+    printf("  |%c V|%c %c|%c %c|%c %c|%c %c|%c P|\n", board[5], board[6], property[6], board[7], property[7], board[8], property[8], board[9], property[9], board[10]);
     printf("  +---+---+---+---+---+---+\n");
     printf("d |%c %c|               |%c %c| i\n", board[4], property[4], board[11], property[11]);
     printf("  +---+               +---+\n");
