@@ -12,10 +12,13 @@
 // Function Prototypes
 void displayMenu();
 void gameLoop(int mode);
-int changePlayerTurn(int currentPlayer);
-int movePlayer(int playerPosition, int steps);
+int debugStepInput();
+char changePlayerTurn(char currentPlayer);
+char updateBoardPositions(char currentPlayer, char otherPlayer, int player1Position, int player2Position, bool beforeMove);
+int updatePlayerPosition(int playerPosition, int steps);
 void printBoard();
 void printPlayerBalances(int player1Balance, int player2Balance);
+void printTurnSummary(char currentPlayer, int steps, int player1Position, int player2Position, char *boardNames[]);
 
 int main()
 {
@@ -73,19 +76,21 @@ void gameLoop(int mode)
 {
     bool inGame = true;
 
-    int currentPlayer = 1;
-    char board[21] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
-    char property[21] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
+    char currentPlayer = '1';
+    char otherPlayer = '2';
+    char boardPlayerPositions[21] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
+    char propertyPositions[21] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
+    char *boardNames[21] = {"Go", "Property A", "Property B", "Property C", "Property D", "Just Visiting", "Property E", "Property F",
+                                    "Property G", "Property H", "Free Parking", "Property I", "Property J", "Property K", "Property L",
+                                    "Go To Jail", "Property M", "Property N", "Luxury Tax", "Property O"};
 
     // Player 1 Variables
     int player1Balance = 10000000;
-    int player1Props[15];
     int player1JailTurns = 0;
     int player1Position = 0;
 
     // Player 2 Variables
     int player2Balance = 10000000;
-    int player2Props[15];
     int player2JailTurns = 0;
     int player2Position = 0;
 
@@ -93,71 +98,155 @@ void gameLoop(int mode)
     {
         int steps;
 
+        // Clears the console and prints the current state of board and player balances.
         system("clear||cls");
-        printBoard(board, property);
+        printBoard(boardPlayerPositions, propertyPositions);
         printPlayerBalances(player1Balance, player2Balance);
-
+        printf("\n");
+        
+        // Checks the current mode and changes user input between random and specified.
         if(mode == 0)
         {
             printf("yes\n");
         }
-        else if(mode == 1)
+        else
         {
-            do
-            {
-                printf("Enter a number between 1-20:\n");
-                scanf("%i", &steps);
-            }
-            while(steps < 1 || steps > 20);
+            steps = debugStepInput();
         }
 
-        printf("Steps: %i\n", steps);
-
-        if(currentPlayer == 1)
+        // Moves the current player and updates board values.
+        if(currentPlayer == '1')
         {
-            board[player1Position] = ' ';
-            player1Position = movePlayer(player1Position, steps);
-            board[player1Position] = '1';
+            boardPlayerPositions[player1Position] = updateBoardPositions(currentPlayer, otherPlayer, player1Position, player2Position, true);
+            player1Position = updatePlayerPosition(player1Position, steps);
+            boardPlayerPositions[player1Position] = updateBoardPositions(currentPlayer, otherPlayer, player1Position, player2Position, false);
         }
         else
         {
-            board[player2Position] = ' ';
-            player2Position = movePlayer(player2Position, steps);
-            board[player2Position] = '2';
+            boardPlayerPositions[player2Position] = updateBoardPositions(currentPlayer, otherPlayer, player1Position, player2Position, true);
+            player2Position = updatePlayerPosition(player2Position, steps);
+            boardPlayerPositions[player2Position] = updateBoardPositions(currentPlayer, otherPlayer, player1Position, player2Position, false);
         }
 
+        // Re-print the current board after player move.
+        system("clear||cls");
+        printBoard(boardPlayerPositions, propertyPositions);
+        printPlayerBalances(player1Balance, player2Balance);
+        printf("\n");
+        printTurnSummary(currentPlayer, steps, player1Position, player2Position, boardNames);
+
+        /*
+            Additional game mechanics
+
+            Buying of properties
+            Going to Jail
+            Paying rent
+            Paying taxes
+            Passing Go
+        */
+
+        // Change the player variables.
+        otherPlayer = currentPlayer;
         currentPlayer = changePlayerTurn(currentPlayer);
 
+        // Wait for the player to end turn.
+        printf("\n");
+        printf("Press ENTER key to end turn.\n");
+        fflush(stdin);
+        getchar();
     }
     inGame = false;
+}
+
+
+/*
+    Gets user input for number of steps (for debug mode only).
+    @return returns the number of steps from input.
+*/
+int debugStepInput()
+{
+    int steps;
+
+    do
+    {
+        printf("Enter a number between 1-20:\n");
+        int success = scanf("%i", &steps);
+
+        // Check if input is integer
+        switch(success)
+        {
+            case 1:
+                break;
+            case 0:
+                fflush(stdin);
+                steps = 0;
+                break;
+        }
+    }
+    while(steps < 1 || steps > 20);
+
+    return steps;
 }
 
 /*
     Changes current player.
     @param currentPlayer - the current player.
+    @return returns the new player.
 */
-int changePlayerTurn(int currentPlayer)
+char changePlayerTurn(char currentPlayer)
 {
-    int newPlayer;
-    if (currentPlayer == 1)
+    char newPlayer;
+    if (currentPlayer == '1')
     {
-        newPlayer = 2;
+        newPlayer = '2';
     }
     else
     {
-        newPlayer = 1;
+        newPlayer = '1';
     }
 
     return newPlayer;
 }
 
 /*
+    Updates the board values according to player positions.
+    @param currentPlayer - the current player.
+    @param otherPlayer - the other player.
+    @param player1Position - the position of player 1.
+    @param player2Position - the position of player 2.
+    @param beforeMove - checks if called before or after player move.
+    @return returns the new value for the board according to the current player's position. 
+*/
+char updateBoardPositions(char currentPlayer, char otherPlayer, int player1Position, int player2Position, bool beforeMove)
+{   
+    char boardPositionValue;
+
+    if(beforeMove)
+    {
+        if(player1Position == player2Position)
+            boardPositionValue = otherPlayer;
+        else
+            boardPositionValue = ' ';
+    }
+    else
+    {
+        if(player1Position == player2Position)
+            boardPositionValue = '3';
+        else
+            boardPositionValue = currentPlayer;
+    }
+
+    return boardPositionValue;
+}
+
+/*
     Moves the current player.
     @param playerPosition - the current position of the player.
     @param steps - steps to take.
+    @return returns new player position after taking steps.
 */
-int movePlayer(int playerPosition, int steps)
-{
+int updatePlayerPosition(int playerPosition, int steps)
+{   
     int newPlayerPosition;
 
     if(playerPosition + steps > 19)
@@ -205,4 +294,26 @@ void printPlayerBalances(int player1Balance, int player2Balance)
     printf("Account Balance:\n");
     printf("Player 1: %i.00\n", player1Balance);
     printf("Player 2: %i.00\n", player2Balance);
+}
+
+/*
+    Prints the current turn's summary.
+    @param currentPlayer - the current player.
+    @param steps - the rolled steps to take.
+    @param player1Position - the position of player 1.
+    @param player2Position - the position of player 2.
+    @param boardNames - the array of the names of each position on the board.
+*/
+void printTurnSummary(char currentPlayer, int steps, int player1Position, int player2Position, char *boardNames[])
+{
+    int currentPlayerPosition;
+
+    if(currentPlayer == '1')
+        currentPlayerPosition = player1Position;
+    else
+        currentPlayerPosition = player2Position;
+
+    printf("Player %c turn:\n", currentPlayer);
+    printf("- rolled a %i\n", steps);
+    printf("- landed on %s\n", boardNames[currentPlayerPosition]);
 }
