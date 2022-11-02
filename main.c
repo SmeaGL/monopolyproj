@@ -14,7 +14,7 @@ void displayMenu();
 void gameLoop(int mode);
 int debugStepInput();
 char changePlayerTurn(char currentPlayer);
-char updateBoardPositions(char currentPlayer, char otherPlayer, int player1Position, int player2Position, bool beforeMove);
+char updateBoardValues(char currentPlayer, char otherPlayer, int player1Position, int player2Position, bool beforeMove);
 int updatePlayerPosition(int playerPosition, int steps);
 void printBoard();
 void printPlayerBalances(int player1Balance, int player2Balance);
@@ -117,15 +117,15 @@ void gameLoop(int mode)
         // Moves the current player and updates board values.
         if(currentPlayer == '1')
         {
-            boardPlayerPositions[player1Position] = updateBoardPositions(currentPlayer, otherPlayer, player1Position, player2Position, true);
+            boardPlayerPositions[player1Position] = updateBoardValues(currentPlayer, otherPlayer, player1Position, player2Position, true);
             player1Position = updatePlayerPosition(player1Position, steps);
-            boardPlayerPositions[player1Position] = updateBoardPositions(currentPlayer, otherPlayer, player1Position, player2Position, false);
+            boardPlayerPositions[player1Position] = updateBoardValues(currentPlayer, otherPlayer, player1Position, player2Position, false);
         }
         else
         {
-            boardPlayerPositions[player2Position] = updateBoardPositions(currentPlayer, otherPlayer, player1Position, player2Position, true);
+            boardPlayerPositions[player2Position] = updateBoardValues(currentPlayer, otherPlayer, player1Position, player2Position, true);
             player2Position = updatePlayerPosition(player2Position, steps);
-            boardPlayerPositions[player2Position] = updateBoardPositions(currentPlayer, otherPlayer, player1Position, player2Position, false);
+            boardPlayerPositions[player2Position] = updateBoardValues(currentPlayer, otherPlayer, player1Position, player2Position, false);
         }
 
         // Re-print the current board after player move.
@@ -217,7 +217,7 @@ char changePlayerTurn(char currentPlayer)
     @param beforeMove - checks if called before or after player move.
     @return returns the new value for the board according to the current player's position. 
 */
-char updateBoardPositions(char currentPlayer, char otherPlayer, int player1Position, int player2Position, bool beforeMove)
+char updateBoardValues(char currentPlayer, char otherPlayer, int player1Position, int player2Position, bool beforeMove)
 {   
     char boardPositionValue;
 
