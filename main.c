@@ -63,6 +63,7 @@ void displayMenu()
 
 /*
     The main loop of the game.
+    @param mode - current mode of game (play or debug).
 */
 void gameLoop(int mode)
 {
