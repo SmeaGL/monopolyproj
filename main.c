@@ -8,17 +8,24 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <math.h>
+#include <ctype.h>
 
 // Function Prototypes
 void displayMenu();
 void gameLoop(int mode);
 int debugStepInput();
-void changePlayerTurn(char *currentPlayer, char *otherPlayer, int *currentPlayerPosition, int *otherPlayerPosition);
+void changePlayerTurn(char *currentPlayer, char *otherPlayer, int *currentPlayerPosition, int *otherPlayerPosition,
+                        int **currentPlayerBalance, int **otherPlayerBalance);
 void updateBoardValues(char *boardPlayerPositions, char currentPlayer, char otherPlayer, int *currentPlayerPosition, int *otherPlayerPosition, int steps);
 int updatePlayerPosition(int playerPosition, int steps);
-void printBoard();
+int checkTilePurpose(char currentPlayer, int *currentPlayerPosition, int *currentPlayerBalance, int *otherPlayerBalance, char *propertyPositions, int *cost, int *rent);
+int buyOrRentProperty(char currentPlayer, int *currentPlayerPosition, int *currentPlayerBalance, int *otherPlayerBalance, char *propertyPositions, int cost, int rent);
+void printBoard(char board[], char property[]);
 void printPlayerBalances(int player1Balance, int player2Balance);
-void printTurnSummary(char currentPlayer, int *currentPlayerPosition, int steps, char *boardNames[]);
+void printRollSummary(char currentPlayer, int *currentPlayerPosition, int steps, char *boardNames[]);
+void printActionSummary(int *currentPlayerPosition, int otherPlayer, char *boardNames[], int tileChoice, int rent);
+
+
 
 int main()
 {
@@ -89,10 +96,12 @@ void gameLoop(int mode)
     // Current Player Variables
     char currentPlayer = '1';
     int *currentPlayerPosition = &player1Position;
+    int *currentPlayerBalance = &player1Balance;
 
     // Other Player Variables
     char otherPlayer = '2';
     int *otherPlayerPosition = &player2Position;
+    int *otherPlayerBalance = &player2Balance;
 
     // Board Variales
     char boardPlayerPositions[21] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
@@ -122,10 +131,17 @@ void gameLoop(int mode)
         {
             steps = debugStepInput();
         }
+        
+        // Check if will pass go and add balance if yes
+        if(*currentPlayerPosition + steps >= 20)
+        {   
+            *currentPlayerBalance += 1000000;
+        }
 
         // Moves the current player
         boardPlayerPositions[*currentPlayerPosition] = ' ';
         *currentPlayerPosition = updatePlayerPosition(*currentPlayerPosition, steps);
+
 
         // Update the board values
         updateBoardValues(boardPlayerPositions, currentPlayer, otherPlayer, currentPlayerPosition, otherPlayerPosition, steps);
@@ -135,20 +151,32 @@ void gameLoop(int mode)
         printBoard(boardPlayerPositions, propertyPositions);
         printPlayerBalances(player1Balance, player2Balance);
         printf("\n");
-        printTurnSummary(currentPlayer, currentPlayerPosition, steps, boardNames);
+        printRollSummary(currentPlayer, currentPlayerPosition, steps, boardNames);
 
-        /*
-            Additional game mechanics
+        int cost;
+        int rent;
+        int tileChoice;
+        int tilePurpose = checkTilePurpose(currentPlayer, currentPlayerPosition, currentPlayerBalance, otherPlayerBalance, propertyPositions, &cost, &rent);
+        switch(tilePurpose)
+        {
+            case 0:
+                tileChoice = -1;
+                break;
+            case 1:
+                tileChoice = buyOrRentProperty(currentPlayer, currentPlayerPosition, currentPlayerBalance, otherPlayerBalance, propertyPositions, cost, rent);
+                break;
+        }
+        
 
-            Buying of properties
-            Going to Jail
-            Paying rent
-            Paying taxes
-            Passing Go
-        */
+        system("clear||cls");
+        printBoard(boardPlayerPositions, propertyPositions);
+        printPlayerBalances(player1Balance, player2Balance);
+        printf("\n");
+        printRollSummary(currentPlayer, currentPlayerPosition, steps, boardNames);
+        printActionSummary(currentPlayerPosition, otherPlayer, boardNames, tileChoice, rent);
 
         // Change the player variables.
-        changePlayerTurn(&currentPlayer, &otherPlayer, currentPlayerPosition, otherPlayerPosition);
+        changePlayerTurn(&currentPlayer, &otherPlayer, currentPlayerPosition, otherPlayerPosition, &currentPlayerBalance, &otherPlayerBalance);
 
         // Wait for the player to end turn.
         printf("\n");
@@ -195,22 +223,27 @@ int debugStepInput()
     @param currentPlayer - the current player.
     @return returns the new player.
 */
-void changePlayerTurn(char *currentPlayer, char *otherPlayer, int *currentPlayerPosition, int *otherPlayerPosition)
+void changePlayerTurn(char *currentPlayer, char *otherPlayer, int *currentPlayerPosition, int *otherPlayerPosition,
+                        int **currentPlayerBalance, int **otherPlayerBalance)
 {
     char newPlayer;
     int newPlayerPosition;
+    int *newPlayerBalance;
 
     // Store other variable to new
     newPlayer = *otherPlayer;
     newPlayerPosition = *otherPlayerPosition;
+    newPlayerBalance = *otherPlayerBalance;
 
     // Change other
     *otherPlayer = *currentPlayer;
     *otherPlayerPosition = *currentPlayerPosition;
+    *otherPlayerBalance = *currentPlayerBalance;
 
     // Change current
     *currentPlayer = newPlayer;
     *currentPlayerPosition = newPlayerPosition;
+    *currentPlayerBalance = newPlayerBalance;
 }
 
 /*
@@ -226,12 +259,12 @@ void updateBoardValues(char *boardPlayerPositions, char currentPlayer, char othe
 {   
     if(*currentPlayerPosition == *otherPlayerPosition)
     {
-        *boardPlayerPositions[*currentPlayerPosition] = '3';
+        boardPlayerPositions[*currentPlayerPosition] = '3';
     }
     else
     {
-        *boardPlayerPositions[*currentPlayerPosition] = currentPlayer;
-        *boardPlayerPositions[*otherPlayerPosition] = otherPlayer;
+        boardPlayerPositions[*currentPlayerPosition] = currentPlayer;
+        boardPlayerPositions[*otherPlayerPosition] = otherPlayer;
     }
 }
 
@@ -255,6 +288,123 @@ int updatePlayerPosition(int playerPosition, int steps)
     }
 
     return newPlayerPosition;
+}
+
+int checkTilePurpose(char currentPlayer, int *currentPlayerPosition, int *currentPlayerBalance, int *otherPlayerBalance, char *propertyPositions, int *cost, int *rent)
+{
+    int returnValue;
+
+    switch(*currentPlayerPosition)
+    {   
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            *cost = 2000000;
+            *rent = 300000;
+            returnValue = 1;
+            break;
+
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+            *cost = 4000000;
+            *rent = 500000;
+            returnValue = 1;
+            break;
+        
+        case 11:
+        case 12:
+        case 13:
+        case 14:
+            *cost = 6000000;
+            *rent = 1000000;
+            returnValue = 1;
+            break;
+
+        case 16:
+        case 17:
+        case 19:
+            *cost = 8000000;
+            *rent = 2000000;
+            returnValue = 1;
+            break;
+
+        // Go To Jail
+        case 15:
+            break;
+
+        // Luxury Tax
+        case 18:
+            *currentPlayerBalance -= 1000000;
+            returnValue = 3;
+            break;
+        default:
+            returnValue = 0;
+            break;
+    }
+
+    return returnValue;
+}
+
+int buyOrRentProperty(char currentPlayer, int *currentPlayerPosition, int *currentPlayerBalance, int *otherPlayerBalance, char *propertyPositions, int cost, int rent)
+{
+    int returnValue;
+    
+    // Ask to buy property
+    if(propertyPositions[*currentPlayerPosition] == ' ')
+    {
+        char answer;
+        fflush(stdin);
+        printf("\n");
+        printf("Would you like to buy this property? y/n: \n");
+
+        int success = scanf("%c", &answer);
+        switch(success)
+        {
+            case 1:
+                break;
+            case 0:
+                fflush(stdin);
+                answer = ' ';
+                break;
+        }
+        
+        answer = tolower(answer);
+
+        if (answer == 'y')
+        {
+            if (*currentPlayerBalance >= cost)
+            {
+                if(currentPlayer == '1')
+                {
+                    propertyPositions[*currentPlayerPosition] = 'X';
+                }
+                else
+                {
+                    propertyPositions[*currentPlayerPosition] = 'Y';
+                }
+
+                returnValue = 0;
+            }
+            else
+            {
+                returnValue = 1;
+            }
+        }
+    }
+
+    // Pay rent
+    else
+    {
+        *currentPlayerBalance -= rent;
+        *otherPlayerBalance += rent;
+
+        returnValue = 2;
+    }
+
+    return returnValue;
 }
 
 /*
@@ -300,9 +450,30 @@ void printPlayerBalances(int player1Balance, int player2Balance)
     @param player2Position - the position of player 2.
     @param boardNames - the array of the names of each position on the board.
 */
-void printTurnSummary(char currentPlayer, int *currentPlayerPosition, int steps, char *boardNames[])
+void printRollSummary(char currentPlayer, int *currentPlayerPosition, int steps, char *boardNames[])
 {
     printf("Player %c turn:\n", currentPlayer);
     printf("- rolled a %i\n", steps);
     printf("- landed on %s\n", boardNames[*currentPlayerPosition]);
+}
+
+void printActionSummary(int *currentPlayerPosition, int otherPlayer, char *boardNames[], int tileChoice, int rent)
+{
+    switch(tileChoice)
+    {
+        case 0:
+            printf("- bought %s\n", boardNames[*currentPlayerPosition]);
+            break;
+        case 1:
+            printf("\n");
+            printf("Not enough money.\n");
+            break;
+        case 2:
+            printf("- paid %i.00 to Player %c\n", rent, otherPlayer);
+            break;
+        case 3:
+            printf("- paid Luxury Tax");
+        default:
+            break;
+    }
 }
